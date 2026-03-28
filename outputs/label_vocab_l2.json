@@ -1,0 +1,23 @@
+[
+  "Capsid",
+  "Connector_complex",
+  "DNA_injection_internal_delivery",
+  "DNA_modification",
+  "DNA_recombination",
+  "DNA_replication",
+  "Entry_blocking_exclusion",
+  "Head_assembly_packaging",
+  "Host_cell_exit_broad",
+  "Host_defense_counterdefense",
+  "Host_recognition",
+  "Host_takeover_interference",
+  "Integration_excision_control",
+  "Lysogeny_lytic_switch_regulation",
+  "Membrane_disruption",
+  "Nucleotide_metabolism",
+  "Peptidoglycan_degradation",
+  "Phage_transcription_machinery",
+  "Protein_RNA_processing",
+  "Tail",
+  "Transcription_factor"
+]

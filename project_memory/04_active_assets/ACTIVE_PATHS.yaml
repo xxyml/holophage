@@ -1,0 +1,62 @@
+paths:
+  repo_root: .
+
+  active_roots:
+    baseline: baseline
+    embedding_pipeline: embedding_pipeline
+    saprot_embedding: SaProt-1.3B_emb
+    data_processed: data_processed
+    outputs: outputs
+    splits: splits
+    project_memory: project_memory
+
+  runtime_inputs:
+    train_config: baseline/train_config.full_stage2.yaml
+    label_table_csv: data_processed/training_labels_wide_with_split.csv
+    join_index_csv: data_processed/baseline_embedding_join_index.csv
+    vocab_l1: outputs/label_vocab_l1.json
+    vocab_l2: outputs/label_vocab_l2.json
+    vocab_l3_core: outputs/label_vocab_l3_core.json
+    split_csv: splits/split_by_homology_cluster_v1.csv
+    embedding_dir_exact: embedding_pipeline/outputs/embed_exact
+    embedding_index_db: baseline/artifacts/embedding_index_exact.sqlite
+    prepacked_dir: baseline/artifacts/prepacked_core_exact
+
+  task_tables:
+    dataset_l1: data_processed/dataset_l1.csv
+    dataset_l2: data_processed/dataset_l2.csv
+    dataset_l3_core: data_processed/dataset_l3_core.csv
+    dataset_l3_multilabel: data_processed/dataset_l3_multilabel.csv
+    dataset_parent_only: data_processed/dataset_parent_only.csv
+    dataset_defer: data_processed/dataset_defer.csv
+    dataset_open_set: data_processed/dataset_open_set.csv
+
+  active_docs:
+    onboarding: PROJECT_ONBOARDING_FOR_AI.md
+    directory_guide: DIRECTORY_STRUCTURE.md
+    project_overview: project_memory/00_index/PROJECT_OVERVIEW_zh.md
+    ontology_spec: project_memory/01_ontology_spec/ONTOLOGY_SPEC_PFO_v1_0_2.md
+    training_label_policy: project_memory/01_ontology_spec/TRAINING_LABEL_POLICY.md
+    training_data_schema: project_memory/02_data_pipeline/TRAINING_DATA_SCHEMA.md
+    training_task_boundary: project_memory/02_data_pipeline/TRAINING_TASK_BOUNDARY.md
+    split_policy: project_memory/02_data_pipeline/DATA_SPLIT_POLICY.md
+    baseline_input_manifest: project_memory/02_data_pipeline/BASELINE_INPUT_MANIFEST.md
+    processing_changelog: project_memory/02_data_pipeline/PROCESSING_CHANGELOG.md
+
+  support_roots:
+    structure_pipeline: structure_pipeline
+    structures: structures
+    portable_pipeline: dataset_pipeline_portable
+    local_scripts: pfo_local_pipeline_scripts
+
+  handoff_roots:
+    ai_handoff_package: AI_HANDOFF_PACKAGE
+
+  workbench_roots:
+    intermediate_data: data_intermediate
+    generated_notes: gpt生成
+    temp: tmp
+    misc_root: root
+
+  archive_roots:
+    dataset_repair_history: 数据集修复

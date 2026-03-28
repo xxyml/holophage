@@ -1,0 +1,49 @@
+run:
+  name: baseline_l1_l2_l3core_subset_8g_exact
+  output_dir: baseline/runs/baseline_l1_l2_l3core_subset_8g_exact
+  seed: 42
+
+data:
+  # Runtime paths are sourced from project_memory/04_active_assets/ACTIVE_PATHS.yaml.
+  # Do not hand-edit paths here unless you are updating backward-compat mirrors intentionally.
+  target_status: trainable_core
+  # Contract mirror only: current baseline remains train/val/test over homology_cluster_v1.
+  allowed_splits: [train, val, test]
+
+model:
+  input_dim: 1024
+  hidden_dim: 512
+  hidden_dim2: 256
+  dropout: 0.2
+
+training:
+  epochs: 2
+  batch_size: 128
+  eval_batch_size: 256
+  num_workers: 0
+  learning_rate: 0.001
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  device: auto
+  loss_weights:
+    l1: 1.0
+    l2: 1.0
+    l3: 1.0
+  use_class_weights: true
+  use_hierarchy_loss: false
+  hierarchy_loss_weight: 0.1
+  log_every_n_steps: 50
+  smoke_steps:
+  sampler:
+    enabled: true
+    mode: cluster_exact_balanced
+    seed: 42
+    samples_per_epoch:
+    cluster_weight_power: 1.0
+    exact_weight_power: 1.0
+    shuffle_within_group: true
+
+evaluation:
+  export_topk: 3
+  export_embeddings: false

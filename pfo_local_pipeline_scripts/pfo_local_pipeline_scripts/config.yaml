@@ -1,0 +1,84 @@
+project_root: "D:/data/ai4s/holophage"
+
+paths:
+  raw_protein_table: "dataset_pipeline_portable/data/1genome_protein_context_phrog.txt"
+  phrog_annotation_lookup: "dataset_pipeline_portable/data/unique_phrog_annotation.tsv"
+  mapping_table: "gpt生成/v1.0.2/PFO_v1_0_2_remapped_729_terms.csv"
+  annotation_stat_table: "dataset_pipeline_portable/data/phrog_annotation_protein_count.tsv"
+
+  intermediate_dir: "data_intermediate"
+  processed_dir: "data_processed"
+  outputs_dir: "outputs"
+  splits_dir: "splits"
+  logs_dir: "logs"
+
+input:
+  sep: "\t"
+  encoding: "utf-8"
+  preview_nrows: 5
+
+columns:
+  protein_id: "protein_id"
+  genome_id: "genome_id"
+  contig_id: "accession"
+  gene_index: "gene_index"
+  sequence: "protein_sequence"
+  phrog_annotation: "phrog_annotation"
+  annotation_raw: "annot"
+
+lookup_columns:
+  phrog_annotation: "phrog_annotation"
+  annotation_raw: "annot"
+
+mapping_columns:
+  annotation: "annotation"
+  level1_direct: "level1_direct"
+  level2_primary: "level2_primary"
+  node_primary: "node_primary"
+  status: "status"
+  multi_label_flag: "multi_label_flag"
+  secondary_level1: "secondary_level1"
+  secondary_level2: "secondary_level2"
+  secondary_node: "secondary_node"
+
+split:
+  strategy: "homology_cluster"
+  version: "homology_cluster_v1"
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  random_state: 42
+  homology:
+    docker_image: "ghcr.io/soedinglab/mmseqs2:master"
+    cluster_scope: "all_proteins"
+    fasta_path: "splits/homology_cluster_v1/all_proteins.fasta"
+    fasta_summary_json: "splits/homology_cluster_v1/all_proteins_summary.json"
+    exact_prefix: "splits/homology_cluster_v1/mmseqs_exact100"
+    exact_tmp_dir: "splits/homology_cluster_v1/tmp_exact100"
+    homology_prefix: "splits/homology_cluster_v1/mmseqs_homology30"
+    homology_tmp_dir: "splits/homology_cluster_v1/tmp_homology30"
+    membership_tsv: "splits/homology_cluster_v1/protein_to_homology_cluster.tsv"
+    cluster_stats_tsv: "splits/homology_cluster_v1/homology_cluster_stats.tsv"
+    membership_summary_json: "splits/homology_cluster_v1/homology_membership_summary.json"
+    split_summary_json: "splits/homology_cluster_v1/homology_split_summary.json"
+    exact_min_seq_id: 1.0
+    exact_coverage: 1.0
+    exact_cov_mode: 0
+    exact_workflow: "easy-linclust"
+    cluster_workflow: "easy-cluster"
+    cluster_min_seq_id: 0.3
+    cluster_coverage: 0.8
+    cluster_cov_mode: 0
+    cluster_evalue: 0.001
+    threads: 14
+    balance_alpha: 0.5
+
+normalize:
+  no_mapping_aliases:
+    - "<no_phrog_mapping>"
+    - "no_phrog_mapping"
+  blank_aliases:
+    - ""
+    - "NA"
+    - "None"
+    - "nan"

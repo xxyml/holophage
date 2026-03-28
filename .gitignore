@@ -1,0 +1,75 @@
+# Holophage: code/docs in git, large assets out of git
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Baseline runtime artifacts
+/baseline/artifacts/
+/baseline/runs/
+
+# Sequence embedding pipeline: keep scripts/docs, ignore heavy assets
+/embedding_pipeline/models/
+/embedding_pipeline/outputs/
+/embedding_pipeline/logs/
+/embedding_pipeline/inputs/*.parquet
+/embedding_pipeline/inputs/*.csv
+/embedding_pipeline/inputs/*.tsv
+/embedding_pipeline/inputs/*.pt
+
+# SaProt pipeline: keep scripts/docs, ignore heavy assets
+/SaProt-1.3B_emb/models/
+/SaProt-1.3B_emb/outputs/
+/SaProt-1.3B_emb/logs/
+/SaProt-1.3B_emb/inputs/*.parquet
+/SaProt-1.3B_emb/inputs/*.csv
+/SaProt-1.3B_emb/inputs/*.tsv
+/SaProt-1.3B_emb/inputs/*.pt
+
+# Processed data and split tables are runtime assets, not git assets
+/data_processed/*.csv
+/data_processed/*.parquet
+/data_processed/*.tsv
+/splits/
+
+# Large support / archive / handoff mirrors
+/AI_HANDOFF_PACKAGE/
+/dataset_pipeline_portable/
+/data_intermediate/
+/gpt生成/
+/logs/
+/models/
+/root/
+/structures/
+/tmp/
+/数据集修复/
+/paper/*.pdf
+
+# Project memory archives and transfer bundles
+/project_memory/05_archive/
+/project_memory/04_active_assets/model_dev_transfer_package/
+
+# Optional generated or local-only outputs
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+*.sqlite
+*.db
+
+# Keep active small outputs and docs by default
+!/outputs/*.json
+!/outputs/*.md
+!/outputs/*.yaml
+!/outputs/*.yml

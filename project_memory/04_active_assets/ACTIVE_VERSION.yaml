@@ -1,0 +1,73 @@
+project:
+  name: holophage
+  last_updated: 2026-03-28
+  manifest_version: 1
+  repo_state: active
+
+active_truth:
+  ontology_version: PFO_v1.0.2
+  mapping_version: PFO_v1_0_2_remapped_729_terms
+  split_strategy: homology_cluster
+  split_version: homology_cluster_v1
+  sequence_embedding_key: exact_sequence_rep_id
+  sequence_embedding_model: ProtT5_XL_UniRef50
+  structure_embedding_branch: SaProt-1.3B_AA-only
+  baseline_scope: L1_L2_L3_core
+  target_status_primary: trainable_core
+  current_runtime_mode: sequence_first
+
+training_contract:
+  label_space:
+    l1_vocab: outputs/label_vocab_l1.json
+    l2_vocab: outputs/label_vocab_l2.json
+    l3_core_vocab: outputs/label_vocab_l3_core.json
+    l1_classes: 7
+    l2_classes: 21
+    l3_core_classes: 29
+  label_boundary:
+    node_primary_is_full_l3_vocab: false
+    trainable_multilabel_in_round1: false
+    parent_only_in_l3_round1: false
+    open_set_in_round1: false
+  sampler:
+    enabled: true
+    mode: cluster_exact_balanced
+  hierarchy:
+    enabled_in_current_baseline: false
+  statuses_defined:
+    - trainable_core
+    - trainable_multilabel
+    - parent_only
+    - defer
+    - open_set
+  statuses_used_by_current_baseline:
+    - trainable_core
+
+data_contract:
+  primary_label_table: data_processed/training_labels_wide_with_split.csv
+  primary_join_index: data_processed/baseline_embedding_join_index.csv
+  primary_split_file: splits/split_by_homology_cluster_v1.csv
+  primary_exact_embedding_input: embedding_pipeline/inputs/exact_sequence_embedding_input.parquet
+  primary_sequence_embedding_dir: embedding_pipeline/outputs/embed_exact
+  primary_train_config: baseline/train_config.full_stage2.yaml
+
+stats_snapshot:
+  total_protein_rows: 2543002
+  total_exact_unique_sequences: 976210
+  total_homology_clusters: 222847
+  trainable_core_rows: 426351
+  trainable_core_exact_unique: 173866
+
+doc_policy:
+  active_docs_root: project_memory
+  archive_root: project_memory/05_archive
+  require_doc_status_block: true
+  status_block_style: tail_metadata_block
+  require_last_verified: true
+  require_supersedes_field: true
+
+single_source_of_truth_notes:
+  - L2 正式训练 vocab 固定为 21 类，必须与 outputs/label_vocab_l2.json、outputs/training_statistics.md、baseline/README.md 保持一致。
+  - 当前正式 split 解释口径固定为 homology_cluster_v1，不再沿用 genome-aware / genome-heldout 表述。
+  - 当前 active baseline 是 sequence-only 的 L1 + L2 + L3 core，对照组应长期保留。
+  - node_primary 不是全量 L3 标签空间，L3 core 只能从 status == trainable_core 定义。

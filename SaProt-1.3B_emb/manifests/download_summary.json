@@ -1,0 +1,25 @@
+{
+  "repo_id": "westlake-repl/SaProt_1.3B_AF2",
+  "revision": null,
+  "target_dir": "D:\\data\\ai4s\\holophage\\SaProt-1.3B_emb\\models\\SaProt_1.3B_AF2",
+  "required_files": [
+    "config.json",
+    "pytorch_model.bin",
+    "tokenizer_config.json",
+    "special_tokens_map.json",
+    "vocab.txt"
+  ],
+  "optional_files": [
+    "README.md"
+  ],
+  "available_files": [
+    ".gitattributes",
+    "README.md",
+    "config.json",
+    "pytorch_model.bin",
+    "special_tokens_map.json",
+    "tokenizer_config.json",
+    "vocab.txt"
+  ],
+  "total_remote_bytes": 5204102744
+}

@@ -1,0 +1,76 @@
+project_root: D:/data/ai4s/holophage
+
+paths:
+  training_labels_wide: data_processed/training_labels_wide_with_split.csv
+  target_manifest_tsv: structures/manifests/structure_target_manifest.tsv
+  target_manifest_parquet: structures/manifests/structure_target_manifest.parquet
+  local_structure_manifest_tsv: structures/manifests/local_structure_manifest.tsv
+  local_structure_coverage_summary_json: structures/manifests/local_structure_coverage_summary.json
+  all_exact_structure_status_tsv: structures/manifests/all_exact_structure_status.tsv
+  missing_exact_all_tsv: structures/manifests/missing_exact_all.tsv
+  missing_exact_trainable_core_tsv: structures/manifests/missing_exact_trainable_core.tsv
+  missing_exact_summary_json: structures/manifests/missing_exact_summary.json
+  phold_plan_tsv: structures/manifests/phold_retrieval_plan.tsv
+  phold_plan_summary_json: structures/manifests/phold_retrieval_plan.summary.json
+  phold_download_dir: structures/_cache/phold
+  phold_selected_subarchives_dir: structures/_cache/phold/selected_subarchives
+  hit_candidates_tsv: structures/manifests/structure_hit_candidates.tsv
+  query_log_tsv: structures/manifests/structure_query_log.tsv
+  canonical_hits_tsv: structures/manifests/structure_hits_canonical.tsv
+  download_manifest_tsv: structures/manifests/structure_download_manifest.tsv
+  coverage_summary_json: structures/manifests/structure_coverage_summary.json
+  coverage_summary_md: structures/manifests/structure_coverage_summary.md
+  structures_dir: structures
+  cache_dir: structures/_cache
+  hints_tsv: structure_pipeline/manual_identifier_hints.tsv
+
+screening:
+  target_status: trainable_core
+  user_agent: holophage-structure-pipeline/1.0
+  timeout_sec: 60
+  sleep_sec: 0.1
+  max_retries: 2
+  viro3d_page_size: 5
+
+sources:
+  local_pdb:
+    enabled: true
+    directories:
+      - name: empathi_400_1500
+        path: D:/data/ai4s/dataset_empathi/HoloPhage/data/400_1500
+        format: pdb
+        confidence_scale: plddt_0_100
+      - name: empathi_pdb_storage
+        path: D:/data/ai4s/dataset_empathi/dataset/data/pdb_storage
+        format: pdb
+        confidence_scale: score_0_1
+  phold_search_db:
+    enabled: true
+    dataset_name: phold_search_db_1p36m
+    approximate_structure_count: 1366602
+    approximate_archive_size_gb: 42.7
+    doc_url: https://phold.readthedocs.io/en/latest/
+    zenodo_record_url: https://zenodo.org/records/16739199
+    zenodo_file_name: final_combined_phold_searchdb_tarballs_per_phrog_specialised.tar
+    direct_download_url: https://zenodo.org/records/16739199/files/final_combined_phold_searchdb_tarballs_per_phrog_specialised.tar?download=1
+    note: bootstrap_retrieval_layer_for_phage_structures
+  afdb:
+    enabled: true
+    api_base: https://alphafold.ebi.ac.uk/api/prediction
+  bfvd:
+    enabled: true
+    metadata_url: https://bfvd.steineggerlab.workers.dev/latest/bfvd_metadata.tsv
+    beacon_index_url: https://bfvd.steineggerlab.workers.dev/latest/3dbeacon.tar.index
+    cif_index_url: https://bfvd.steineggerlab.workers.dev/latest/cif.tar.index
+    cif_archive_url: https://bfvd.steineggerlab.workers.dev/latest/cif.tar
+  viro3d:
+    enabled: true
+    api_base: https://viro3d.cvr.gla.ac.uk/api
+    docs_url: https://viro3d.cvr.gla.ac.uk/api/openapi.json
+
+selection:
+  source_priority:
+    AFDB: 0
+    BFVD: 1
+    Viro3D: 2
+  preferred_format: cif

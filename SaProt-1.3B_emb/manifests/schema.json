@@ -1,0 +1,14 @@
+{
+  "model_name": "D:\\data\\ai4s\\holophage\\SaProt-1.3B_emb\\models\\SaProt_1.3B_AF2",
+  "input_path": "D:\\data\\ai4s\\holophage\\SaProt-1.3B_emb\\inputs\\exact_sequence_embedding_input.parquet",
+  "hidden_size": 1280,
+  "dtype": "float16",
+  "max_position_embeddings": 1026,
+  "max_context_aa": 1024,
+  "window_overlap": 256,
+  "shard_size": 20000,
+  "id_col": "id",
+  "seq_col": "sequence",
+  "seq_len_col": "seq_len",
+  "generated_at": "2026-03-28T10:50:53"
+}

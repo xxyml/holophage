@@ -1,0 +1,60 @@
+run:
+  name: multimodal_v2_seq_ctx
+  output_dir: baseline/runs/multimodal_v2_seq_ctx
+  seed: 42
+
+data:
+  # Shared runtime paths continue to come from project_memory/04_active_assets/ACTIVE_PATHS.yaml.
+  target_status: trainable_core
+  allowed_splits: [train, val, test]
+
+multimodal:
+  variant: seq_ctx
+  modalities:
+    sequence: true
+    structure: false
+    context: true
+  assets:
+    structure_embedding_dir: null
+    context_feature_table: data_processed/context_features_v1.parquet
+    prepacked_dir: baseline/artifacts/prepacked_multimodal_v2/seq_ctx
+  model:
+    fusion_dim: 512
+    branch_hidden_dim: 256
+    trunk_hidden_dim: 512
+    trunk_hidden_dim2: 512
+    dropout: 0.1
+    modality_dropout: 0.1
+  loss:
+    l1: 0.5
+    l2: 1.0
+    l3: 1.2
+    hierarchy: 0.08
+  evaluation:
+    topk: 3
+    export_embeddings: false
+
+training:
+  device: auto
+  batch_size: 128
+  eval_batch_size: 256
+  num_workers: 0
+  epochs: 5
+  learning_rate: 1.0e-3
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  max_grad_norm: 1.0
+  log_every_n_steps: 50
+  use_class_weights: true
+  sampler:
+    enabled: true
+    mode: cluster_exact_balanced
+    seed: 42
+    samples_per_epoch: null
+    cluster_weight_power: 1.0
+    exact_weight_power: 1.0
+    shuffle_within_group: true
+
+evaluation:
+  export_topk: 3
+  export_embeddings: false

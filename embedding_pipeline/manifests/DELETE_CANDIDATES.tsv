@@ -1,0 +1,10 @@
+path	reason	recommended_action
+D:\data\ai4s\holophage\embedding_pipeline\outputs\archive\embed_partial_instance_20260321_1948	旧的实例级 embedding 半成品，当前正式主线已切到 exact_sequence_rep_id	archive_then_delete
+D:\data\ai4s\holophage\embedding_pipeline\outputs\archive\embed_exact_partial_truncate_20260321_2003	旧的截断版 exact embedding 半成品，当前正式主线已改为滑窗聚合	archive_then_delete
+D:\data\ai4s\holophage\embedding_pipeline\outputs\archive\embed.tar.gz	早期压缩包，当前正式主线不再使用	archive_then_delete
+D:\data\ai4s\holophage\embedding_pipeline\models\prot_t5_xl_uniref50_bits\pytorch_model.bin	本机优先使用 model.safetensors；该 bin 曾触发过不稳定加载	crash_confirmed_then_delete
+D:\data\ai4s\holophage\embedding_pipeline\logs\smoke	embedding 试跑与排障日志，保留价值有限	review_then_delete
+D:\data\ai4s\holophage\baseline\direct_download_prott5.py	旧的模型下载辅助脚本，现已由 embedding_pipeline/scripts 接管	review_then_delete
+D:\data\ai4s\holophage\baseline\download_prott5_gitlfs.ps1	旧的模型下载辅助脚本，现已由 embedding_pipeline/scripts 接管	review_then_delete
+D:\data\ai4s\holophage\baseline\download_prott5_model.py	旧的模型下载辅助脚本，现已由 embedding_pipeline/scripts 接管	review_then_delete
+D:\data\ai4s\holophage\models	已空目录，embedding 模型已迁入 embedding_pipeline/models	delete_empty_dir

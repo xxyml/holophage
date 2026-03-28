@@ -1,0 +1,28 @@
+{
+  "rows": 2543002,
+  "context_dim": 18,
+  "window_size": 2,
+  "vector_columns": [
+    "center_len_norm",
+    "neighbor_count_norm",
+    "has_left_1",
+    "has_right_1",
+    "has_left_2",
+    "has_right_2",
+    "left_1_len_norm",
+    "right_1_len_norm",
+    "left_2_len_norm",
+    "right_2_len_norm",
+    "left_1_same_strand",
+    "right_1_same_strand",
+    "left_2_same_strand",
+    "right_2_same_strand",
+    "left_1_has_phrog",
+    "right_1_has_phrog",
+    "left_2_has_phrog",
+    "right_2_has_phrog"
+  ],
+  "input_main_table": "D:\\data\\ai4s\\holophage\\data_processed\\training_labels_wide_with_split.csv",
+  "input_upstream_context": "D:\\data\\ai4s\\holophage\\dataset_pipeline_portable\\data\\1genome_protein_context_phrog.txt",
+  "output_parquet": "D:\\data\\ai4s\\holophage\\data_processed\\context_features_v1.parquet"
+}

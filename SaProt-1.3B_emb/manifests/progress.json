@@ -1,0 +1,10 @@
+{
+  "last_completed_shard": 0,
+  "rows_done": 20000,
+  "updated_at": "2026-03-28T10:56:56",
+  "input_path": "D:\\data\\ai4s\\holophage\\SaProt-1.3B_emb\\inputs\\exact_sequence_embedding_input.parquet",
+  "model_path": "D:\\data\\ai4s\\holophage\\SaProt-1.3B_emb\\models\\SaProt_1.3B_AF2",
+  "hidden_size": 1280,
+  "max_context": 1024,
+  "resume_auto": true
+}

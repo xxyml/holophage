@@ -1,0 +1,18 @@
+{
+  "input_path": "D:\\data\\ai4s\\holophage\\SaProt-1.3B_emb\\inputs\\exact_sequence_embedding_input.parquet",
+  "model_path": "D:\\data\\ai4s\\holophage\\SaProt-1.3B_emb\\models\\SaProt_1.3B_AF2",
+  "rows_total": 20000,
+  "rows_done": 20000,
+  "hidden_size": 1280,
+  "max_position_embeddings": 1026,
+  "max_context_aa": 1024,
+  "num_long_sequences": 0,
+  "num_shards_expected": 1,
+  "num_shards_written": 1,
+  "dtype": "float16",
+  "batch_size": 4,
+  "window_overlap": 256,
+  "long_seq_window_batch_size": 2,
+  "completed_at": "2026-03-28T10:56:56",
+  "truncated_any": false
+}

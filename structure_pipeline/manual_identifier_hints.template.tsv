@@ -1,0 +1,4 @@
+exact_sequence_rep_id	candidate_uniprot_accession	candidate_afdb_entry_id	candidate_bfvd_model_id	candidate_viro3d_identifier	candidate_viro3d_qualifier
+demo_exact_afdb	P07550			P07550	protein_name
+demo_exact_bfvd			A0A023GZ41		
+demo_exact_viro3d				human immunodeficiency virus 1	virus_name

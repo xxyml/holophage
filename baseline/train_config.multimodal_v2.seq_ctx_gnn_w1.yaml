@@ -1,25 +1,24 @@
 run:
-  name: multimodal_v2_seq_ctx
-  output_dir: baseline/runs/multimodal_v2_seq_ctx
+  name: multimodal_v2_seq_ctx_gnn_v2a_w1
+  output_dir: baseline/runs/multimodal_v2_seq_ctx_gnn_v2a_w1
   seed: 42
 
 data:
-  # Shared runtime paths continue to come from project_memory/04_active_assets/ACTIVE_PATHS.yaml.
   target_status: trainable_core
   allowed_splits: [train, val, test]
 
 multimodal:
-  variant: seq_ctx
+  variant: seq_ctx_gnn_v2a_w1
   modalities:
     sequence: true
     structure: false
     context: true
   assets:
-    context_mode: handcrafted
+    context_mode: gnn_v2a
     structure_embedding_dir: null
-    context_feature_table: data_processed/context_features_v1.parquet
+    context_feature_table: data_processed/context_graph_features_v2a_window1.parquet
     split_override_csv: null
-    prepacked_dir: baseline/artifacts/prepacked_multimodal_v2/seq_ctx
+    prepacked_dir: baseline/artifacts/prepacked_multimodal_v2/seq_ctx_gnn_v2a_w1
   model:
     fusion_dim: 512
     branch_hidden_dim: 256

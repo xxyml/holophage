@@ -9,11 +9,35 @@ from pathlib import Path
 from baseline.common import REPO_ROOT, resolve_path
 
 
-VARIANT_TO_CONFIG = {
-    "seq_only": "baseline/train_config.multimodal_v2.stage1.yaml",
-    "seq_struct": "baseline/train_config.multimodal_v2.seq_struct.yaml",
-    "seq_ctx": "baseline/train_config.multimodal_v2.seq_ctx.yaml",
-    "all": "baseline/train_config.multimodal_v2.all.yaml",
+VARIANT_SPECS = {
+    "seq_only": {
+        "config": "baseline/train_config.multimodal_v2.stage1.yaml",
+        "run_slug": "multimodal_v2_seq_only_hc",
+    },
+    "seq_struct": {
+        "config": "baseline/train_config.multimodal_v2.seq_struct.yaml",
+        "run_slug": "multimodal_v2_seq_struct_hc",
+    },
+    "seq_ctx": {
+        "config": "baseline/train_config.multimodal_v2.seq_ctx.yaml",
+        "run_slug": "multimodal_v2_seq_ctx_handcrafted_hc",
+    },
+    "seq_ctx_gnn_w1": {
+        "config": "baseline/train_config.multimodal_v2.seq_ctx_gnn_w1.yaml",
+        "run_slug": "multimodal_v2_seq_ctx_gnn_v2a_w1_hc",
+    },
+    "seq_ctx_gnn_w2": {
+        "config": "baseline/train_config.multimodal_v2.seq_ctx_gnn_w2.yaml",
+        "run_slug": "multimodal_v2_seq_ctx_gnn_v2a_w2_hc",
+    },
+    "seq_ctx_gnn_w4": {
+        "config": "baseline/train_config.multimodal_v2.seq_ctx_gnn_w4.yaml",
+        "run_slug": "multimodal_v2_seq_ctx_gnn_v2a_w4_hc",
+    },
+    "all": {
+        "config": "baseline/train_config.multimodal_v2.all.yaml",
+        "run_slug": "multimodal_v2_all_hc",
+    },
 }
 
 
@@ -30,7 +54,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--variants",
         nargs="+",
-        choices=list(VARIANT_TO_CONFIG.keys()),
+        choices=list(VARIANT_SPECS.keys()),
         default=["seq_only", "seq_struct", "seq_ctx", "all"],
     )
     parser.add_argument("--seeds", nargs="+", type=int, default=[42, 52, 62])
@@ -54,8 +78,8 @@ def run_command(command: list[str]) -> None:
 
 
 def build_run_spec(variant: str, seed: int) -> RunSpec:
-    config_path = resolve_path(VARIANT_TO_CONFIG[variant], REPO_ROOT)
-    run_name = f"multimodal_v2_{variant}_seed{seed}"
+    config_path = resolve_path(VARIANT_SPECS[variant]["config"], REPO_ROOT)
+    run_name = f"{VARIANT_SPECS[variant]['run_slug']}_seed{seed}"
     output_dir = REPO_ROOT / "baseline" / "runs" / run_name
     return RunSpec(
         variant=variant,

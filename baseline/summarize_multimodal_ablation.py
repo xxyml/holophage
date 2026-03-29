@@ -87,6 +87,7 @@ def main() -> None:
 
     df = pd.DataFrame(rows).sort_values(["variant", "seed", "run_dir"]).reset_index(drop=True)
     df["relative_to_seq_only_l3"] = float("nan")
+    df["relative_to_ctx_handcrafted_l3"] = float("nan")
     df["stability_label"] = "insufficient_baseline"
 
     baseline_map = {
@@ -94,11 +95,18 @@ def main() -> None:
         for _, row in df[df["variant"].isin(["stage1_seq_only", "seq_only"])].iterrows()
         if int(row["seed"]) >= 0
     }
+    handcrafted_map = {
+        int(row["seed"]): float(row["best_val_l3_macro_f1"])
+        for _, row in df[df["variant"].isin(["seq_ctx", "seq_ctx_handcrafted"])].iterrows()
+        if int(row["seed"]) >= 0
+    }
 
     for idx, row in df.iterrows():
         seed = int(row["seed"])
         if seed in baseline_map:
             df.at[idx, "relative_to_seq_only_l3"] = float(row["best_val_l3_macro_f1"]) - baseline_map[seed]
+        if seed in handcrafted_map:
+            df.at[idx, "relative_to_ctx_handcrafted_l3"] = float(row["best_val_l3_macro_f1"]) - handcrafted_map[seed]
 
     for variant, variant_df in df.groupby("variant", sort=False):
         if variant in {"stage1_seq_only", "seq_only"}:

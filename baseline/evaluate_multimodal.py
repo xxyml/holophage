@@ -25,7 +25,12 @@ from baseline.common import (
 )
 from baseline.multimodal_v2.model import MultimodalBaselineV2
 from baseline.dataset_multimodal import MultimodalCoreDataset
-from baseline.multimodal_v2.types import CONTEXT_FEATURE_DIM, DEFAULT_SEQUENCE_EMBEDDING_DIM, DEFAULT_STRUCTURE_EMBEDDING_DIM
+from baseline.multimodal_v2.types import (
+    CONTEXT_FEATURE_DIM,
+    CONTEXT_GRAPH_NODE_FEATURE_DIM,
+    DEFAULT_SEQUENCE_EMBEDDING_DIM,
+    DEFAULT_STRUCTURE_EMBEDDING_DIM,
+)
 
 
 @dataclass(frozen=True)
@@ -33,6 +38,8 @@ class MultimodalAssets:
     prepacked_dir: Path
     structure_embedding_dir: Path | None
     context_feature_table: Path | None
+    context_mode: str
+    split_override_csv: Path | None
 
 
 def choose_device(device_name: str) -> torch.device:
@@ -48,10 +55,14 @@ def resolve_assets(config: dict[str, Any]) -> MultimodalAssets:
         raise ValueError("multimodal.assets.prepacked_dir must be configured.")
     structure_dir = assets.get("structure_embedding_dir")
     context_table = assets.get("context_feature_table")
+    context_mode = str(assets.get("context_mode", "handcrafted"))
+    split_override_csv = assets.get("split_override_csv")
     return MultimodalAssets(
         prepacked_dir=resolve_path(prepacked_dir, REPO_ROOT),
         structure_embedding_dir=None if not structure_dir else resolve_path(structure_dir, REPO_ROOT),
         context_feature_table=None if not context_table else resolve_path(context_table, REPO_ROOT),
+        context_mode=context_mode,
+        split_override_csv=None if not split_override_csv else resolve_path(split_override_csv, REPO_ROOT),
     )
 
 
@@ -66,6 +77,8 @@ def validate_support_assets(config: dict[str, Any], assets: MultimodalAssets) ->
         if assets.context_feature_table is None:
             raise ValueError("multimodal.context=true but context_feature_table is missing.")
         required["context_feature_table"] = assets.context_feature_table
+    if assets.split_override_csv is not None:
+        required["split_override_csv"] = assets.split_override_csv
     validate_paths_exist(required)
 
 
@@ -77,12 +90,17 @@ def build_model(config: dict[str, Any], dataset: MultimodalCoreDataset, vocab_si
         sequence_input_dim=int(getattr(dataset, "sequence_embedding").shape[1] if len(dataset) else DEFAULT_SEQUENCE_EMBEDDING_DIM),
         structure_input_dim=int(getattr(dataset, "structure_embedding").shape[1] if len(dataset) else DEFAULT_STRUCTURE_EMBEDDING_DIM),
         context_input_dim=int(getattr(dataset, "context_features").shape[1] if len(dataset) else CONTEXT_FEATURE_DIM),
+        context_graph_node_dim=int(getattr(dataset, "context_node_features").shape[2] if len(dataset) else CONTEXT_GRAPH_NODE_FEATURE_DIM),
         fusion_dim=int(model_cfg.get("fusion_dim", 512)),
         adapter_hidden_dim=int(model_cfg.get("branch_hidden_dim", 256)),
         trunk_hidden_dim=int(model_cfg.get("trunk_hidden_dim", 512)),
         trunk_hidden_dim2=int(model_cfg.get("trunk_hidden_dim2", model_cfg.get("trunk_hidden_dim", 512))),
         dropout=float(model_cfg.get("dropout", 0.1)),
         modality_dropout=float(model_cfg.get("modality_dropout", 0.1)),
+        context_mode=str((config.get("multimodal", {}) or {}).get("assets", {}).get("context_mode", "handcrafted")),
+        context_gnn_hidden_dim=int(model_cfg.get("context_gnn_hidden_dim", 128)),
+        context_gnn_output_dim=int(model_cfg.get("context_gnn_output_dim", 128)),
+        context_center_residual=bool(model_cfg.get("context_center_residual", False)),
         num_l1=num_l1,
         num_l2=num_l2,
         num_l3=num_l3,
@@ -152,6 +170,10 @@ def run_evaluation(
             sequence_embedding=batch["sequence_embedding"].to(device),
             structure_embedding=batch["structure_embedding"].to(device),
             context_features=batch["context_features"].to(device),
+            context_node_features=batch["context_node_features"].to(device),
+            context_adjacency=batch["context_adjacency"].to(device),
+            context_node_mask=batch["context_node_mask"].to(device),
+            context_center_index=batch["context_center_index"].to(device),
             modality_mask=batch["modality_mask"].to(device),
         )
         logits_map = {

@@ -12,6 +12,10 @@ if __package__ in {None, ""}:
     sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from baseline.multimodal_v2.types import (
+    CONTEXT_GRAPH_CENTER_INDEX,
+    CONTEXT_GRAPH_MAX_NODES,
+    CONTEXT_GRAPH_NODE_FEATURE_DIM,
+    CONTEXT_MODE_HANDCRAFTED,
     CONTEXT_FEATURE_DIM,
     DEFAULT_SEQUENCE_EMBEDDING_DIM,
     DEFAULT_STRUCTURE_EMBEDDING_DIM,
@@ -57,9 +61,27 @@ class MultimodalCoreDataset(Dataset):
             )
 
         self.schema_version = str(payload.get("schema_version", MULTIMODAL_PACK_SCHEMA_VERSION))
+        self.context_mode = str(payload.get("context_mode", CONTEXT_MODE_HANDCRAFTED))
+        self.context_graph_version = str(payload.get("context_graph_version", ""))
         self.sequence_embedding: torch.Tensor = payload["sequence_embedding"].float().contiguous()
         self.structure_embedding: torch.Tensor = payload["structure_embedding"].float().contiguous()
         self.context_features: torch.Tensor = payload["context_features"].float().contiguous()
+        self.context_node_features: torch.Tensor = payload.get(
+            "context_node_features",
+            torch.zeros((self.sequence_embedding.shape[0], CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_NODE_FEATURE_DIM), dtype=torch.float32),
+        ).float().contiguous()
+        self.context_adjacency: torch.Tensor = payload.get(
+            "context_adjacency",
+            torch.zeros((self.sequence_embedding.shape[0], CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_MAX_NODES), dtype=torch.float32),
+        ).float().contiguous()
+        self.context_node_mask: torch.Tensor = payload.get(
+            "context_node_mask",
+            torch.zeros((self.sequence_embedding.shape[0], CONTEXT_GRAPH_MAX_NODES), dtype=torch.bool),
+        ).bool().contiguous()
+        self.context_center_index: torch.Tensor = payload.get(
+            "context_center_index",
+            torch.full((self.sequence_embedding.shape[0],), CONTEXT_GRAPH_CENTER_INDEX, dtype=torch.long),
+        ).long().contiguous()
         self.modality_mask: torch.Tensor = payload["modality_mask"].bool().contiguous()
         self.label_l1: torch.Tensor = payload["label_l1"].long().contiguous()
         self.label_l2: torch.Tensor = payload["label_l2"].long().contiguous()
@@ -79,6 +101,10 @@ class MultimodalCoreDataset(Dataset):
         if not (
             self.structure_embedding.shape[0]
             == self.context_features.shape[0]
+            == self.context_node_features.shape[0]
+            == self.context_adjacency.shape[0]
+            == self.context_node_mask.shape[0]
+            == len(self.context_center_index)
             == self.modality_mask.shape[0]
             == len(self.label_l1)
             == len(self.label_l2)
@@ -106,6 +132,20 @@ class MultimodalCoreDataset(Dataset):
             )
         if self.context_features.shape[1] != CONTEXT_FEATURE_DIM:
             raise ValueError(f"Expected context dim {CONTEXT_FEATURE_DIM}, got {self.context_features.shape[1]}")
+        if self.context_node_features.shape[1:] != (CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_NODE_FEATURE_DIM):
+            raise ValueError(
+                f"Expected context graph node features {(CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_NODE_FEATURE_DIM)}, "
+                f"got {tuple(self.context_node_features.shape[1:])}"
+            )
+        if self.context_adjacency.shape[1:] != (CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_MAX_NODES):
+            raise ValueError(
+                f"Expected context adjacency {(CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_MAX_NODES)}, "
+                f"got {tuple(self.context_adjacency.shape[1:])}"
+            )
+        if self.context_node_mask.shape[1] != CONTEXT_GRAPH_MAX_NODES:
+            raise ValueError(
+                f"Expected context node mask width {CONTEXT_GRAPH_MAX_NODES}, got {self.context_node_mask.shape[1]}"
+            )
         if self.modality_mask.shape[1] != len(MODALITY_NAMES):
             raise ValueError(
                 f"Expected modality mask width {len(MODALITY_NAMES)}, got {self.modality_mask.shape[1]}"
@@ -116,6 +156,10 @@ class MultimodalCoreDataset(Dataset):
             self.sequence_embedding = self.sequence_embedding[:n]
             self.structure_embedding = self.structure_embedding[:n]
             self.context_features = self.context_features[:n]
+            self.context_node_features = self.context_node_features[:n]
+            self.context_adjacency = self.context_adjacency[:n]
+            self.context_node_mask = self.context_node_mask[:n]
+            self.context_center_index = self.context_center_index[:n]
             self.modality_mask = self.modality_mask[:n]
             self.label_l1 = self.label_l1[:n]
             self.label_l2 = self.label_l2[:n]
@@ -168,12 +212,18 @@ class MultimodalCoreDataset(Dataset):
             "sequence_embedding": self.sequence_embedding[index],
             "structure_embedding": self.structure_embedding[index],
             "context_features": self.context_features[index],
+            "context_node_features": self.context_node_features[index],
+            "context_adjacency": self.context_adjacency[index],
+            "context_node_mask": self.context_node_mask[index],
+            "context_center_index": self.context_center_index[index],
             "modality_mask": self.modality_mask[index],
             "split": self.split[index],
             "split_strategy": self.split_strategy[index],
             "split_version": self.split_version[index],
             "homology_cluster_id": self.homology_cluster_id[index],
             "status": self.status[index],
+            "context_mode": self.context_mode,
+            "context_graph_version": self.context_graph_version,
             "sequence_length": self.sequence_length[index],
         }
         return batch

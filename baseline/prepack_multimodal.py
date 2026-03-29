@@ -25,15 +25,22 @@ from baseline.common import (
     validate_runtime_contract,
 )
 from baseline.multimodal_v2.assets import (
+    ContextGraphStore,
     ContextFeatureStore,
     ShardedEmbeddingMetaIndex,
     fill_embeddings_by_meta,
     infer_shard_embedding_dim,
 )
 from baseline.multimodal_v2.types import (
+    CONTEXT_GRAPH_CENTER_INDEX,
+    CONTEXT_GRAPH_MAX_NODES,
+    CONTEXT_GRAPH_NODE_FEATURE_DIM,
+    CONTEXT_MODE_GNN_V2A,
+    CONTEXT_MODE_HANDCRAFTED,
     CONTEXT_FEATURE_DIM,
     DEFAULT_STRUCTURE_EMBEDDING_DIM,
     MULTIMODAL_PACK_SCHEMA_VERSION,
+    MULTIMODAL_PACK_SCHEMA_VERSION_GNN_V2A,
 )
 
 
@@ -68,6 +75,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--structure-embedding-dir", default=None)
     parser.add_argument("--context-source", default=None)
     parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--split-override", default=None)
     parser.add_argument("--dtype", choices=["float32", "float16"], default="float16")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--limit-train", type=int, default=None)
@@ -119,6 +127,34 @@ def load_source_frame(
     return pd.concat(parts, axis=0, ignore_index=True)
 
 
+def apply_split_override(df: pd.DataFrame, split_override_csv: Path) -> pd.DataFrame:
+    override = pd.read_csv(
+        split_override_csv,
+        usecols=["protein_id", "split", "split_strategy", "split_version"],
+        low_memory=False,
+    )
+    override["protein_id"] = override["protein_id"].astype(str)
+    merged = df.merge(
+        override.rename(
+            columns={
+                "split": "split_override",
+                "split_strategy": "split_strategy_override",
+                "split_version": "split_version_override",
+            }
+        ),
+        on="protein_id",
+        how="left",
+    )
+    for source, target in (
+        ("split_override", "split"),
+        ("split_strategy_override", "split_strategy"),
+        ("split_version_override", "split_version"),
+    ):
+        mask = merged[source].notna()
+        merged.loc[mask, target] = merged.loc[mask, source].astype(str)
+    return merged.drop(columns=["split_override", "split_strategy_override", "split_version_override"])
+
+
 def fetch_sequence_meta_map(db_path: Path, embedding_ids: list[str]) -> dict[str, dict[str, Any]]:
     conn = sqlite3.connect(db_path)
     try:
@@ -156,6 +192,8 @@ def build_split_pack(
     structure_meta_map: dict[str, dict[str, Any]] | None,
     structure_dim: int,
     context_features: dict[str, torch.Tensor],
+    context_graphs: dict[str, dict[str, torch.Tensor]],
+    context_mode: str,
     dtype: torch.dtype,
 ) -> dict[str, Any]:
     n = len(split_df)
@@ -163,6 +201,10 @@ def build_split_pack(
     sequence_embedding = torch.zeros((n, seq_dim), dtype=dtype)
     structure_embedding = torch.zeros((n, int(structure_dim)), dtype=dtype)
     context_tensor = torch.zeros((n, CONTEXT_FEATURE_DIM), dtype=dtype)
+    context_node_features = torch.zeros((n, CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_NODE_FEATURE_DIM), dtype=dtype)
+    context_adjacency = torch.zeros((n, CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_MAX_NODES), dtype=dtype)
+    context_node_mask = torch.zeros((n, CONTEXT_GRAPH_MAX_NODES), dtype=torch.bool)
+    context_center_index = torch.full((n,), CONTEXT_GRAPH_CENTER_INDEX, dtype=torch.long)
     modality_mask = torch.zeros((n, 3), dtype=torch.bool)
 
     label_l1 = torch.tensor(split_df["label_l1"].values, dtype=torch.long)
@@ -205,16 +247,33 @@ def build_split_pack(
         modality_mask[idx, 0] = True
         if structure_meta_map is not None and exact_ids[idx] in structure_meta_map:
             modality_mask[idx, 1] = True
-        feature = context_features.get(protein_id)
-        if feature is not None:
-            context_tensor[idx] = feature.to(dtype=dtype)
-            modality_mask[idx, 2] = True
+        if context_mode == CONTEXT_MODE_GNN_V2A:
+            graph = context_graphs.get(protein_id)
+            if graph is not None:
+                context_node_features[idx] = graph["node_features"].to(dtype=dtype)
+                context_adjacency[idx] = graph["adjacency"].to(dtype=dtype)
+                context_node_mask[idx] = graph["node_mask"].bool()
+                context_center_index[idx] = graph["center_index"].long()
+                modality_mask[idx, 2] = bool(graph["node_mask"][int(graph["center_index"].item())].item())
+        else:
+            feature = context_features.get(protein_id)
+            if feature is not None:
+                context_tensor[idx] = feature.to(dtype=dtype)
+                modality_mask[idx, 2] = True
 
     return {
-        "schema_version": MULTIMODAL_PACK_SCHEMA_VERSION,
+        "schema_version": MULTIMODAL_PACK_SCHEMA_VERSION_GNN_V2A
+        if context_mode == CONTEXT_MODE_GNN_V2A
+        else MULTIMODAL_PACK_SCHEMA_VERSION,
+        "context_mode": context_mode,
+        "context_graph_version": "context_graph_v2a" if context_mode == CONTEXT_MODE_GNN_V2A else "",
         "sequence_embedding": sequence_embedding,
         "structure_embedding": structure_embedding,
         "context_features": context_tensor,
+        "context_node_features": context_node_features,
+        "context_adjacency": context_adjacency,
+        "context_node_mask": context_node_mask,
+        "context_center_index": context_center_index,
         "modality_mask": modality_mask,
         "label_l1": label_l1,
         "label_l2": label_l2,
@@ -236,6 +295,8 @@ def build_split_pack(
             "sequence_dim": int(seq_dim),
             "structure_dim": int(structure_dim),
             "context_dim": int(CONTEXT_FEATURE_DIM),
+            "context_graph_nodes": int(CONTEXT_GRAPH_MAX_NODES),
+            "context_graph_node_dim": int(CONTEXT_GRAPH_NODE_FEATURE_DIM),
         },
     }
 
@@ -248,6 +309,7 @@ def main() -> None:
     assets = multimodal.get("assets", {}) or {}
     use_structure = bool(modalities.get("structure", False))
     use_context = bool(modalities.get("context", False))
+    context_mode = str(assets.get("context_mode", CONTEXT_MODE_HANDCRAFTED))
 
     runtime_paths = {
         "label_table_csv": resolve_path(
@@ -277,6 +339,9 @@ def main() -> None:
         if not context_path:
             raise ValueError("multimodal.context=true but context_feature_table is not configured.")
         runtime_paths["context_source_path"] = resolve_path(context_path, REPO_ROOT)
+    split_override_path = args.split_override or assets.get("split_override_csv")
+    if split_override_path:
+        runtime_paths["split_override_csv"] = resolve_path(split_override_path, REPO_ROOT)
 
     print_runtime_paths(runtime_paths)
     validate_paths_exist(runtime_paths)
@@ -296,6 +361,8 @@ def main() -> None:
     vocab_l3 = load_vocab(resolve_path("outputs/label_vocab_l3_core.json", REPO_ROOT))
     limits = {"train": args.limit_train, "val": args.limit_val, "test": args.limit_test}
     df = load_source_frame(runtime_paths["join_index_csv"], limits, vocab_l1, vocab_l2, vocab_l3)
+    if "split_override_csv" in runtime_paths:
+        df = apply_split_override(df, runtime_paths["split_override_csv"])
     if df.empty:
         raise RuntimeError("No rows remain after trainable_core/vocab filtering.")
 
@@ -315,29 +382,39 @@ def main() -> None:
         structure_dim = infer_shard_embedding_dim(runtime_paths["structure_embedding_dir"])
 
     context_map: dict[str, torch.Tensor] = {}
+    context_graphs: dict[str, dict[str, torch.Tensor]] = {}
     if use_context:
-        context_store = ContextFeatureStore(runtime_paths["context_source_path"])
-        context_map = context_store.prefetch(protein_ids)
+        if context_mode == CONTEXT_MODE_GNN_V2A:
+            context_store = ContextGraphStore(runtime_paths["context_source_path"])
+            context_graphs = context_store.prefetch(protein_ids)
+        else:
+            context_store = ContextFeatureStore(runtime_paths["context_source_path"])
+            context_map = context_store.prefetch(protein_ids)
 
     print(
         f"[prepack] coverage seq={len(sequence_meta_map)}/{len(df)} "
         f"struct={0 if structure_meta_map is None else len(structure_meta_map)}/{len(df)} "
-        f"ctx={len(context_map)}/{len(df)}"
+        f"ctx={len(context_graphs) if context_mode == CONTEXT_MODE_GNN_V2A else len(context_map)}/{len(df)}"
     )
 
     dtype = torch.float16 if args.dtype == "float16" else torch.float32
     summary: dict[str, Any] = {
-        "schema_version": MULTIMODAL_PACK_SCHEMA_VERSION,
+        "schema_version": MULTIMODAL_PACK_SCHEMA_VERSION_GNN_V2A
+        if context_mode == CONTEXT_MODE_GNN_V2A
+        else MULTIMODAL_PACK_SCHEMA_VERSION,
         "output_dir": str(output_dir),
         "dtype": str(dtype),
         "target_status": "trainable_core",
         "sequence_embedding_key": "exact_sequence_rep_id",
         "structure_embedding_key": "exact_sequence_rep_id",
         "context_key": "protein_id",
+        "context_mode": context_mode,
         "feature_dims": {
             "sequence_embedding": int(infer_shard_embedding_dim(runtime_paths["embedding_dir"])),
             "structure_embedding": int(structure_dim),
             "context_features": int(CONTEXT_FEATURE_DIM),
+            "context_graph_nodes": int(CONTEXT_GRAPH_MAX_NODES),
+            "context_graph_node_dim": int(CONTEXT_GRAPH_NODE_FEATURE_DIM),
         },
         "modalities": {
             "sequence": True,
@@ -362,6 +439,8 @@ def main() -> None:
             structure_meta_map=structure_meta_map,
             structure_dim=structure_dim,
             context_features=context_map,
+            context_graphs=context_graphs,
+            context_mode=context_mode,
             dtype=dtype,
         )
         payload["split_name"] = split

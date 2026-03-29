@@ -343,3 +343,20 @@
    - 不把 multilabel 节点并进当前 core softmax
 5. **最后再做 open-set 与 context branch**
    - 两者应建立在 status-aware 任务分解已经成形之后
+
+## 15. GNN Context v2
+
+当前 handcrafted context 在 `trainable_core + L1/L2/L3 core` 第一轮正式评估中未表现出明确增益，因此 context 路径的下一步不是恢复 `all`，而是先单独升级 context branch：
+
+- `GNN context v2a`
+
+固定边界：
+
+- 只替换 context branch
+- 主评估继续使用 `homology_cluster_v1`
+- 同时补 `genome_context_v1` 作为更严格的 context/generalization 辅助评估
+- 不在这一轮引入 multilabel / open-set / graph transformer
+
+详细实现规范见：
+
+- `project_memory/02_data_pipeline/CONTEXT_GRAPH_V2_SPEC.md`

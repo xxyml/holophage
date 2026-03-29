@@ -269,6 +269,19 @@ L = 0.5 * CE_L1 + 1.0 * CE_L2 + 1.2 * CE_L3 + 0.08 * L_hier
 - 先不替换当前 `SaProt AA-only` 正式资产
 - 只作为后续结构分支升级与实验矩阵的优先候选记录
 
+## GNN Context v2
+
+当前 handcrafted context 路径已完成第一轮正式验证，但未表现出明确增益。后续 context branch 的升级规范已单独写入：
+
+- `project_memory/02_data_pipeline/CONTEXT_GRAPH_V2_SPEC.md`
+
+该规范固定了：
+
+- `gnn_v2a` 图资产结构
+- `window=1/2/4` 的局部图定义
+- `GraphSAGE 2-layer` 的第一轮实现边界
+- `genome_context_v1` 作为 context 辅助评估 split 的职责
+
 ---
 doc_status: draft
 source_of_truth_level: reference

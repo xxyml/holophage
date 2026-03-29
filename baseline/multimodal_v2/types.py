@@ -8,12 +8,19 @@ import torch
 
 
 MULTIMODAL_PACK_SCHEMA_VERSION = "multimodal_core_v1"
+MULTIMODAL_PACK_SCHEMA_VERSION_GNN_V2A = "multimodal_core_gnn_v2a"
 MODALITY_NAMES = ("sequence", "structure", "context")
 MODALITY_INDEX = {name: idx for idx, name in enumerate(MODALITY_NAMES)}
 
 DEFAULT_SEQUENCE_EMBEDDING_DIM = 1024
 DEFAULT_STRUCTURE_EMBEDDING_DIM = 1280
 CONTEXT_FEATURE_DIM = 18
+CONTEXT_MODE_HANDCRAFTED = "handcrafted"
+CONTEXT_MODE_GNN_V2A = "gnn_v2a"
+CONTEXT_GRAPH_VERSION_V2A = "context_graph_v2a"
+CONTEXT_GRAPH_MAX_NODES = 9
+CONTEXT_GRAPH_CENTER_INDEX = 4
+CONTEXT_GRAPH_NODE_FEATURE_DIM = 14
 
 CONTEXT_FEATURE_NAMES = (
     "center_len_norm",
@@ -34,6 +41,23 @@ CONTEXT_FEATURE_NAMES = (
     "right_1_has_phrog",
     "left_2_has_phrog",
     "right_2_has_phrog",
+)
+
+CONTEXT_GRAPH_NODE_FEATURE_NAMES = (
+    "protein_len_norm",
+    "strand_forward",
+    "strand_reverse",
+    "has_phrog",
+    "is_center",
+    "offset_-4",
+    "offset_-3",
+    "offset_-2",
+    "offset_-1",
+    "offset_0",
+    "offset_+1",
+    "offset_+2",
+    "offset_+3",
+    "offset_+4",
 )
 
 
@@ -63,12 +87,18 @@ class MultimodalBatch(TypedDict, total=False):
     sequence_embedding: torch.Tensor
     structure_embedding: torch.Tensor
     context_features: torch.Tensor
+    context_node_features: torch.Tensor
+    context_adjacency: torch.Tensor
+    context_node_mask: torch.Tensor
+    context_center_index: torch.Tensor
     modality_mask: torch.Tensor
     split: str
     split_strategy: str
     split_version: str
     homology_cluster_id: str
     status: str
+    context_mode: str
+    context_graph_version: str
     sequence_length: torch.Tensor
 
 
@@ -90,6 +120,10 @@ class MultimodalPackConfig:
     sequence_dim: int = DEFAULT_SEQUENCE_EMBEDDING_DIM
     structure_dim: int = DEFAULT_STRUCTURE_EMBEDDING_DIM
     context_dim: int = CONTEXT_FEATURE_DIM
+    context_mode: str = CONTEXT_MODE_HANDCRAFTED
+    context_graph_version: str = CONTEXT_GRAPH_VERSION_V2A
+    context_graph_max_nodes: int = CONTEXT_GRAPH_MAX_NODES
+    context_graph_node_dim: int = CONTEXT_GRAPH_NODE_FEATURE_DIM
     dtype: str = "float32"
     target_status: str = "trainable_core"
     sequence_key: str = "exact_sequence_rep_id"

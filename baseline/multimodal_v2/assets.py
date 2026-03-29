@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 from collections import OrderedDict, defaultdict
+import json
 from pathlib import Path
 from typing import Any, Iterable
 
 import pandas as pd
 import torch
 
-from .types import CONTEXT_FEATURE_DIM, CONTEXT_FEATURE_NAMES
+from .types import (
+    CONTEXT_FEATURE_DIM,
+    CONTEXT_FEATURE_NAMES,
+    CONTEXT_GRAPH_CENTER_INDEX,
+    CONTEXT_GRAPH_MAX_NODES,
+    CONTEXT_GRAPH_NODE_FEATURE_DIM,
+)
 
 
 def infer_shard_embedding_dim(embedding_dir: str | Path) -> int:
@@ -110,6 +117,47 @@ class ContextFeatureStore:
             "ContextFeatureStore currently expects data_processed/context_features_v1.parquet "
             f"with vector columns {list(CONTEXT_FEATURE_NAMES)!r}; got {self.source_path}."
         )
+
+
+class ContextGraphStore:
+    """Chunked loader for instance-level local graph assets keyed by protein_id."""
+
+    def __init__(self, source_path: str | Path) -> None:
+        self.source_path = Path(source_path)
+
+    def prefetch(self, protein_ids: Iterable[str]) -> dict[str, dict[str, torch.Tensor]]:
+        wanted = {str(pid) for pid in protein_ids}
+        if not wanted:
+            return {}
+        if not self.source_path.exists():
+            raise FileNotFoundError(f"Context graph source not found: {self.source_path}")
+        if self.source_path.suffix.lower() != ".parquet":
+            raise ValueError(f"ContextGraphStore expects parquet input, got {self.source_path}")
+
+        frame = pd.read_parquet(self.source_path)
+        frame = frame[frame["protein_id"].astype(str).isin(wanted)].copy()
+        graph_map: dict[str, dict[str, torch.Tensor]] = {}
+        for _, row in frame.iterrows():
+            protein_id = str(row["protein_id"])
+            graph_map[protein_id] = {
+                "node_features": torch.tensor(
+                    json.loads(str(row["node_features_flat"])),
+                    dtype=torch.float32,
+                ).reshape(CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_NODE_FEATURE_DIM),
+                "adjacency": torch.tensor(
+                    json.loads(str(row["adjacency_flat"])),
+                    dtype=torch.float32,
+                ).reshape(CONTEXT_GRAPH_MAX_NODES, CONTEXT_GRAPH_MAX_NODES),
+                "node_mask": torch.tensor(
+                    json.loads(str(row["node_mask_flat"])),
+                    dtype=torch.bool,
+                ),
+                "center_index": torch.tensor(
+                    int(row.get("center_index", CONTEXT_GRAPH_CENTER_INDEX)),
+                    dtype=torch.long,
+                ),
+            }
+        return graph_map
 
 
 def fill_embeddings_by_meta(

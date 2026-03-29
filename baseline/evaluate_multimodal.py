@@ -301,7 +301,6 @@ def main() -> None:
             "vocab_l3_core": runtime_paths["vocab_l3_core"],
             "embedding_dir": runtime_paths["embedding_dir"],
             "embedding_index_db": runtime_paths["embedding_index_db"],
-            "prepacked_dir": runtime_paths["prepacked_dir"],
         }
     )
     validate_runtime_contract(config, runtime_paths)

@@ -242,6 +242,33 @@ L = 0.5 * CE_L1 + 1.0 * CE_L2 + 1.2 * CE_L3 + 0.08 * L_hier
    - 分类别 gate 统计
 3. 再决定是否把 v2 从 `draft/reference` 提升为更正式的 support baseline
 
+当前阶段性结果记录在：
+
+- `project_memory/02_data_pipeline/MULTIMODAL_V2_INTERIM_RESULTS_2026-03-29.md`
+
+## 结构分支后续升级候选
+
+当前结构分支使用的是：
+
+- `SaProt-1.3B` 的 `AA-only` embedding
+
+这条线适合作为当前低成本结构感知 baseline，但不应被理解为“强独立结构模态”。  
+如果后续确认需要让 structure branch 更像真实结构，同时又不希望在推理时承担完整 `PDB/3Di` 生成成本，优先考虑下面这条升级路线：
+
+- `ProstT5 -> 预测 3Di -> SaProt(AA+3Di) -> structure-aware embedding`
+
+这条路线的定位是：
+
+- 比当前 `SaProt AA-only` 更强结构化
+- 比先生成完整三维结构再转 3Di 更轻量
+- 适合作为 structure branch 的下一代候选方案
+
+当前约定：
+
+- 先不进入 active runtime 主线
+- 先不替换当前 `SaProt AA-only` 正式资产
+- 只作为后续结构分支升级与实验矩阵的优先候选记录
+
 ---
 doc_status: draft
 source_of_truth_level: reference

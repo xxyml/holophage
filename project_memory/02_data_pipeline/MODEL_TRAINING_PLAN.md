@@ -138,6 +138,19 @@
 - 检查是否存在 context 泄漏
 - 评估 context 是否真的带来提升
 
+### 结构分支升级备选
+如果后续确认当前 `SaProt AA-only` 结构分支增益有限，但仍希望增强结构信息，同时控制推理成本，则优先考虑：
+
+- `ProstT5 -> 3Di -> SaProt(AA+3Di)`
+
+使用意图：
+
+- `ProstT5` 负责快速产生 3Di 表征
+- `SaProt` 负责消费 `AA+3Di` 得到更强的 structure-aware embedding
+- 避免把完整三维结构预测作为线上前置条件
+
+这条路线属于后续优化候选，不属于当前第一轮正式 baseline 的既定组成部分。
+
 ---
 
 ## 阶段 4：加入 open-set / unknown

@@ -54,6 +54,7 @@ Thumbs.db
 /tmp/
 /数据集修复/
 /paper/*.pdf
+/embed_exact.tar
 
 # Project memory archives and transfer bundles
 /project_memory/05_archive/

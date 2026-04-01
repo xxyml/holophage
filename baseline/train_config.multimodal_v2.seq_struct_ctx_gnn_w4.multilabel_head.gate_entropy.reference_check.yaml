@@ -1,0 +1,81 @@
+run:
+  name: multimodal_v2_seq_struct_ctx_gnn_v2a_w4_multilabel_head_gate_entropy_reference_check
+  output_dir: baseline/runs/multimodal_v2_seq_struct_ctx_gnn_v2a_w4_multilabel_head_gate_entropy_reference_check
+  seed: 42
+
+data:
+  target_status: trainable_core
+  allowed_splits: [train, val, test]
+  supervision_mode: core_plus_multilabel
+
+multimodal:
+  variant: seq_struct_ctx_gnn_v2a_w4_multilabel_head_gate_entropy_reference_check
+  modalities:
+    sequence: true
+    structure: true
+    context: true
+  assets:
+    context_mode: gnn_v2a
+    structure_embedding_dir: SaProt-1.3B_emb/outputs/embed_exact
+    context_feature_table: data_processed/context_graph_features_v2a_window4.parquet
+    split_override_csv: null
+    prepacked_dir: baseline/artifacts/prepacked_multimodal_v2/seq_struct_ctx_gnn_v2a_w4_multilabel_head
+  model:
+    fusion_dim: 512
+    branch_hidden_dim: 256
+    trunk_hidden_dim: 512
+    trunk_hidden_dim2: 512
+    dropout: 0.1
+    modality_dropout: 0.1
+    preserve_sequence: false
+    context_gnn_hidden_dim: 128
+    context_gnn_output_dim: 128
+    context_center_residual: false
+  loss:
+    l1: 0.5
+    l2: 1.0
+    l3: 1.2
+    hierarchy: 0.08
+    gate_entropy: 0.2
+
+multilabel_head:
+  enabled: true
+  vocab_path: outputs/label_vocab_l3_multilabel.json
+  loss_weight: 1.0
+
+training:
+  device: auto
+  batch_size: 2048
+  eval_batch_size: 4096
+  num_workers: 0
+  export_epoch_artifacts: false
+  epochs: 2
+  learning_rate: 1.0e-3
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  max_grad_norm: 1.0
+  log_every_n_steps: 50
+  use_class_weights: true
+  sampler:
+    enabled: true
+    mode: cluster_exact_balanced
+    seed: 42
+    samples_per_epoch: null
+    cluster_weight_power: 1.0
+    exact_weight_power: 1.0
+    shuffle_within_group: true
+    runtime_mode: baseline
+    batch_level:
+      enabled: false
+      drop_last: false
+      trace_batches: 4
+    profiling:
+      enabled: false
+      probe_samples: 256
+      trace_batches: 4
+      trace_batches_extra: 8
+
+evaluation:
+  export_topk: 3
+  export_embeddings: false
+  export_full_artifacts: false
